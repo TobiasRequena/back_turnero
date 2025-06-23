@@ -43,14 +43,23 @@ app.post('/prestador/register', async (req, res) => {
 
   const hash = await bcrypt.hash(password, 10);
 
+  // 👉 DEFINIMOS SUSCRIPCIÓN COMPLETA AL CREAR
+  const vencimientoPorDefecto = new Date();
+  vencimientoPorDefecto.setMonth(vencimientoPorDefecto.getMonth() + 1); // Ejemplo: 1 mes gratis
+
   const prestador = new Prestador({
     nombre,
     nombreComercial,
     telefono,
     email,
     password: hash,
-    rol: rol || 'prestador', // por defecto 'prestador'
-    direccion
+    rol: rol || 'prestador',
+    direccion,
+    suscripcion: {
+      estado: 'activo',
+      plan: 'free',
+      vencimiento: vencimientoPorDefecto
+    }
   });
 
   const nuevoPrestador = await prestador.save();
@@ -65,15 +74,27 @@ app.post('/prestador/register', async (req, res) => {
 
   await empleadoPropietario.save();
 
-  res.status(201).json({ message: 'Prestador registrado correctamente', prestadorId: nuevoPrestador._id });
+  // Devolvemos prestador formateado para claridad
+  res.status(201).json({
+    message: 'Prestador registrado correctamente',
+    prestador: {
+      id: nuevoPrestador._id,
+      nombre: nuevoPrestador.nombre,
+      nombreComercial: nuevoPrestador.nombreComercial,
+      telefono: nuevoPrestador.telefono,
+      email: nuevoPrestador.email,
+      direccion: nuevoPrestador.direccion,
+      rol: nuevoPrestador.rol,
+      suscripcion: nuevoPrestador.suscripcion
+    }
+  });
 });
-
 
 // ============================
 // ✅ LOGIN Prestador
 // ============================
 
-app.post('/prestador/login', authenticateJWT, async (req, res) => {
+app.post('/prestador/login', async (req, res) => {
   const { email, password } = req.body;
 
   const prestador = await Prestador.findOne({ email });
@@ -100,20 +121,35 @@ app.post('/prestador/login', authenticateJWT, async (req, res) => {
       nombre: prestador.nombreComercial,
       email: prestador.email,
       telefono: prestador.telefono,
-      rol: prestador.rol
+      rol: prestador.rol,
+      suscripcion: prestador.suscripcion
     }
   });
 });
 
 // Obtener todos los prestadores
-app.get('/prestador/prestadores', authenticateJWT, verifyRole('admin'), async (req, res) => {
+app.get('/prestador/prestadores', authenticateJWT, verifyRole('prestador'), async (req, res) => {
   try {
-    const prestadores = await Prestador.find().select('-password'); // ocultamos password
-    res.json(prestadores);
+    const prestadores = await Prestador.find().select('-password');
+
+    const result = prestadores.map(p => ({
+      id: p._id,
+      nombre: p.nombre,
+      nombreComercial: p.nombreComercial,
+      telefono: p.telefono,
+      email: p.email,
+      direccion: p.direccion,
+      rol: p.rol,
+      suscripcion: p.suscripcion,
+      creadoEn: p.creadoEn
+    }));
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener prestadores', error: err.message });
   }
 });
+
 
 // Eliminar un prestador por ID
 app.delete('/prestador/prestadores/:id', authenticateJWT, async (req, res) => {

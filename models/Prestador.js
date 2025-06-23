@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const SuscripcionSchema = new mongoose.Schema({
-  estado: { type: String, enum: ['activo', 'suspendido', 'cancelado'], default: 'activo' },
-  plan: { type: String, enum: ['free', 'pro', 'premium'], default: 'free' },
-  vencimiento: Date
+  estado: { type: String, enum: ['activo', 'suspendido', 'cancelado'], default: 'activo', required: true},
+  plan: { type: String, enum: ['free', 'pro', 'premium'], default: 'pro', required: true },
+  vencimiento: { type: Date, default: Date.now, required: true }
 });
 
 const PrestadorSchema = new mongoose.Schema({
