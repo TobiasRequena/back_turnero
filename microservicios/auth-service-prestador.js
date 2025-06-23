@@ -13,8 +13,8 @@ const verifyRole = require('../middleware/verifyRole');
 const authenticateJWT = require('../middleware/authenticateJWT');
 
 // Configuración global
-const PORT = process.env.AUTH_PORT || 4000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/tupeluya';
+const PORT = process.env.AUTH_PORT_PRESTADOR || 4000;
+const MONGO_URI = process.env.MONGO_URI
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto';
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '7d';
 
@@ -151,12 +151,21 @@ app.get('/prestador/prestadores', authenticateJWT, verifyRole('prestador'), asyn
 });
 
 
-// Eliminar un prestador por ID
+// Eliminar un prestador por ID *y* sus empleados asociados
 app.delete('/prestador/prestadores/:id', authenticateJWT, async (req, res) => {
   try {
     const { id } = req.params;
+
+    const prestador = await Prestador.findById(id);
+    if (!prestador) return res.status(404).json({ message: 'Prestador no encontrado' });
+
+    // ⚠️ Primero eliminamos los empleados asociados
+    await Empleado.deleteMany({ prestador: id });
+
+    // ✅ Luego eliminamos el prestador
     await Prestador.findByIdAndDelete(id);
-    res.json({ message: 'Prestador eliminado correctamente' });
+
+    res.json({ message: 'Prestador y empleados asociados eliminados correctamente' });
   } catch (err) {
     res.status(500).json({ message: 'Error al eliminar prestador', error: err.message });
   }

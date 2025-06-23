@@ -2,10 +2,11 @@
   "name": "back",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start:auth": "nodemon ./microservicios/auth-service.js",
-    "start": "concurrently \"npm run start:auth\""
+    "start:auth-prestador": "nodemon ./microservicios/auth-service-prestador.js",
+    "start:empleado-service": "nodemon ./microservicios/empleados-service.js",
+    "start": "concurrently \"npm run start:auth-prestador\" \"npm run start:empleado-service\""
   },
   "repository": {
     "type": "git",
