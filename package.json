@@ -4,9 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start:auth-prestador": "nodemon ./microservicios/auth-service-prestador.js",
-    "start:empleado-service": "nodemon ./microservicios/empleados-service.js",
-    "start": "concurrently \"npm run start:auth-prestador\" \"npm run start:empleado-service\""
+    "dev": "concurrently \"nodemon microservices/auth.js\" \"nodemon microservices/servicios.js\" \"nodemon microservices/horarios.js\" \"nodemon microservices/turnos.js\""
   },
   "repository": {
     "type": "git",
@@ -22,13 +20,14 @@
   "dependencies": {
     "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.17.0",
-    "mongoose": "^8.15.1",
+    "mongoose": "^8.16.0",
     "node-cron": "^4.1.0",
     "nodemailer": "^7.0.3",
     "qrcode": "^1.5.4",

@@ -1,21 +1,17 @@
 const mongoose = require('mongoose');
 
-const TurnoRecurrenteSchema = new mongoose.Schema({
-  prestador: { type: mongoose.Schema.Types.ObjectId, ref: 'Prestador', required: true },
-  empleado: { type: mongoose.Schema.Types.ObjectId, ref: 'Empleado' },   // Opcional si se quiere turno fijo con empleado
-  cliente: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-  servicio: {
-    nombre: { type: String, required: true },
-    precio: { type: Number, required: true }
-  },
-  diaSemana: {
-    type: String,
-    enum: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
-    required: true
-  },
-  hora: { type: String, required: true },     // Ej: "19:00"
-  estado: { type: String, enum: ['activo', 'inactivo'], default: 'activo' },
-  creadoEn: { type: Date, default: Date.now }
-});
+const turnoRecurrenteSchema = new mongoose.Schema({
+  clienteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Cliente', required: true },
+  prestadorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Prestador', required: true },
+  empleadoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Empleado' },
+  servicioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Servicio', required: true },
+  diaSemana: { type: Number, min: 0, max: 6, required: true }, // 0 = domingo
+  hora: { type: String, required: true }, // "10:30"
+  desde: { type: Date },
+  hasta: { type: Date },
+  observaciones: String,
+  activo: { type: Boolean, default: true },
+  eliminado: { type: Boolean, default: false }
+}, { timestamps: true });
 
-module.exports = mongoose.model('TurnoRecurrente', TurnoRecurrenteSchema);
+module.exports = mongoose.model('TurnoRecurrente', turnoRecurrenteSchema);

@@ -1,11 +1,17 @@
 const mongoose = require('mongoose');
 
-const UsuarioSchema = new mongoose.Schema({
-  nombre: String,
-  telefono: { type: String, required: true, unique: true },
+const clienteSchema = new mongoose.Schema({
+  nombre: { type: String, required: true },
+  telefono: { type: String, required: true },
   email: String,
-  verificado: { type: Boolean, default: false },
-  creadoEn: { type: Date, default: Date.now }
-});
+  passwordHash: String,
+  fidelizacion: {
+    puntos: { type: Number, default: 0 },
+    beneficios: [String]
+  },
+  eliminado: { type: Boolean, default: false }
+}, { timestamps: true });
 
-module.exports = mongoose.model('Usuario', UsuarioSchema);
+clienteSchema.index({ telefono: 1 });
+
+module.exports = mongoose.model('Cliente', clienteSchema);
