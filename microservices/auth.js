@@ -10,10 +10,10 @@ const Prestador = require('../models/Prestador');
 const Cliente = require('../models/Cliente');
 const Empleado = require('../models/Empleado');
 const Admin = require('../models/Admin');
-const verifyRole = require('../middleware/verifyRole');
-const authenticateJWT = require('../middleware/authenticateJWT');
 
 //Middleware
+const verifyRole = require('../middleware/verifyRole');
+const authenticateJWT = require('../middleware/authenticateJWT');
 
 const app = express();
 app.use(cors());
@@ -43,7 +43,7 @@ function generarToken(usuario, tipo) {
 // ===============================
 // 📥 Registro de Prestador
 // ===============================
-app.post('/auth/registro/prestador', async (req, res) => {
+app.post('/api/auth/registro/prestador', async (req, res) => {
   try {
     const { nombreComercial, nombreUrl, email, telefono, password } = req.body;
 
@@ -83,7 +83,7 @@ app.post('/auth/registro/prestador', async (req, res) => {
 // ===============================
 // 📥 Registro de Cliente básico
 // ===============================
-app.post('/auth/registro/cliente', async (req, res) => {
+app.post('/api/auth/registro/cliente', async (req, res) => {
   try {
     const { nombre, telefono } = req.body;
 
@@ -120,7 +120,7 @@ app.post('/auth/registro/cliente', async (req, res) => {
 });
 
 
-app.post('/auth/registro/empleado', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
+app.post('/api/auth/registro/empleado', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
   try {
     const { nombre, email, telefono, password } = req.body;
 
@@ -152,7 +152,7 @@ app.post('/auth/registro/empleado', authenticateJWT, verifyRole('admin', 'presta
   }
 });
 
-app.get('/auth/empleados', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
+app.get('/api/auth/empleados', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
   try {
     const empleados = await Empleado.find({ prestadorId: req.user.id, eliminado: false }).select('-passwordHash');
 
@@ -173,7 +173,7 @@ app.get('/auth/empleados', authenticateJWT, verifyRole('admin', 'prestador'), as
 // ===============================
 // 🔐 Login general (Admin, Prestador, Empleado)
 // ===============================
-app.post('/auth/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -210,7 +210,8 @@ app.post('/auth/login', async (req, res) => {
         id: user._id,
         nombre: user.nombre || user.nombreComercial,
         email: user.email,
-        tipo
+        tipo,
+        nombreUrl: user.nombreUrl || ''
       }
     });
   } catch (err) {
@@ -221,7 +222,7 @@ app.post('/auth/login', async (req, res) => {
 // ===============================
 // ✅ Verificación de token
 // ===============================
-app.get('/auth/verificar', authenticateJWT, (req, res) => {
+app.get('/api/auth/verificar', authenticateJWT, (req, res) => {
   res.json({
     valido: true,
     datos: req.user

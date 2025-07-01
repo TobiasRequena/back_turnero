@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('Mongo error:', err));
 
 // 📌 Crear horario disponible
-app.post('/horarios', authenticateJWT, async (req, res) => {
+app.post('/api/horaios', authenticateJWT, async (req, res) => {
   try {
     const { diaSemana, bloques, empleadoId } = req.body;
     console.log('Crear horario:', req.user);
@@ -35,7 +35,7 @@ app.post('/horarios', authenticateJWT, async (req, res) => {
 });
 
 // 📌 Obtener todos los horarios del prestador (o empleado)
-app.get('/horarios', authenticateJWT, async (req, res) => {
+app.get('/api/horaios', authenticateJWT, async (req, res) => {
   try {
     const filtros = { prestadorId: req.user.id, eliminado: false };
 
@@ -51,7 +51,7 @@ app.get('/horarios', authenticateJWT, async (req, res) => {
 });
 
 // 📌 Editar horario
-app.patch('/horarios/:id', authenticateJWT, async (req, res) => {
+app.patch('/api/horaios/:id', authenticateJWT, async (req, res) => {
   try {
     const { id } = req.params;
     const actualizaciones = req.body;
@@ -71,7 +71,7 @@ app.patch('/horarios/:id', authenticateJWT, async (req, res) => {
 });
 
 // 📌 Eliminar (soft delete)
-app.delete('/horarios/:id', authenticateJWT, async (req, res) => {
+app.delete('/api/horaios/:id', authenticateJWT, async (req, res) => {
   try {
     const { id } = req.params;
 

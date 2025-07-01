@@ -21,7 +21,7 @@ mongoose.connect(process.env.MONGO_URI)
 // ==============================
 // 📌 Crear Turno (manual o cliente)
 // ==============================
-app.post('/turnos', async (req, res) => {
+app.post('/api/turnos', async (req, res) => {
   try {
     const {
       fecha,
@@ -132,7 +132,7 @@ function minutesToTime(totalMinutes) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-app.post('/disponibilidad', async (req, res) => {
+app.post('/api/turnos/disponibilidad', async (req, res) => {
   try {
     // 1. Obtener y validar los datos de entrada
     const { fecha, servicioId, prestadorId, empleadoId } = req.body;
@@ -325,7 +325,7 @@ app.post('/disponibilidad', async (req, res) => {
 // ==============================
 // 📋 Obtener Turnos
 // ==============================
-app.get('/turnos', authenticateJWT, async (req, res) => {
+app.get('/api/turnos', authenticateJWT, async (req, res) => {
   try {
     const filtros = {
       eliminado: false,
@@ -379,7 +379,7 @@ app.get('/turnos', authenticateJWT, async (req, res) => {
 // ==============================
 // ✅ Confirmar turno
 // ==============================
-app.patch('/turnos/:id/confirmar', authenticateJWT, async (req, res) => {
+app.patch('/api/turnos/:id/confirmar', authenticateJWT, async (req, res) => {
   try {
     const turno = await Turno.findByIdAndUpdate(
       req.params.id,
@@ -396,7 +396,7 @@ app.patch('/turnos/:id/confirmar', authenticateJWT, async (req, res) => {
 // ==============================
 // ❌ Cancelar turno
 // ==============================
-app.patch('/turnos/:id/cancelar', authenticateJWT, async (req, res) => {
+app.patch('/api/turnos/:id/cancelar', authenticateJWT, async (req, res) => {
   try {
     const turno = await Turno.findByIdAndUpdate(
       req.params.id,
@@ -413,7 +413,7 @@ app.patch('/turnos/:id/cancelar', authenticateJWT, async (req, res) => {
 // ==============================
 // 🗑️ Soft delete
 // ==============================
-app.delete('/turnos/:id', authenticateJWT, async (req, res) => {
+app.delete('/api/turnos/:id', authenticateJWT, async (req, res) => {
   try {
     const turno = await Turno.findByIdAndUpdate(
       req.params.id,

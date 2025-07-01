@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('Mongo error:', err));
 
 // ✅ Crear servicio
-app.post('/servicios', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
+app.post('/api/servicios', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
   try {
     const { nombre, descripcion, duracionMinutos, precio } = req.body;
     const prestadorId = req.user.id; // Obtener el ID del prestador del token JWT
@@ -52,7 +52,7 @@ app.post('/servicios', authenticateJWT, verifyRole('admin', 'prestador'), async 
 });
 
 // ✅ Obtener todos los servicios del prestador
-app.get('/servicios', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
+app.get('/api/servicios', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
   try {
     const servicios = await Servicio.find({ prestadorId: req.user.id, eliminado: false });
     res.json({ total: servicios.length, servicios });
@@ -62,7 +62,7 @@ app.get('/servicios', authenticateJWT, verifyRole('admin', 'prestador'), async (
 });
 
 // ✅ Editar un servicio
-app.patch('/servicios/:id', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
+app.patch('/api/servicios/:id', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
   try {
     const { id } = req.params;
     const actualizaciones = req.body;
@@ -82,7 +82,7 @@ app.patch('/servicios/:id', authenticateJWT, verifyRole('admin', 'prestador'), a
 });
 
 // ✅ Soft delete de servicio
-app.delete('/servicios/:id', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
+app.delete('/api/servicios/:id', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
   try {
     const { id } = req.params;
 

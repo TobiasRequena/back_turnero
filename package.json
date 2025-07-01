@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev": "concurrently \"nodemon microservices/auth.js\" \"nodemon microservices/servicios.js\" \"nodemon microservices/horarios.js\" \"nodemon microservices/turnos.js\""
+    "dev": "concurrently \"nodemon microservices/auth.js\" \"nodemon microservices/servicios.js\" \"nodemon microservices/horarios.js\" \"nodemon microservices/turnos.js\" \"nodemon gateway/gateway.js\" \"nodemon microservices/general.js\""
   },
   "repository": {
     "type": "git",
