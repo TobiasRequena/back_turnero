@@ -20,12 +20,23 @@ app.use(cors());
 app.use(express.json());
 
 // 🔗 Conexión a MongoDB
+const PORT = process.env.PORT_AUTH || 3001;
+
 mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 60000, // Espera hasta 60 segundos (default es 10.000 ms)
-  socketTimeoutMS: 120000 
+  serverSelectionTimeoutMS: 60000,
+  socketTimeoutMS: 120000
 })
-  .then(() => console.log('[auth] Mongo conectado'))
-  .catch(err => console.error('Mongo error:', err));
+  .then(() => {
+    console.log('[auth] Mongo conectado');
+    app.listen(PORT, () => {
+      console.log(`[auth] Microservicio corriendo en http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ Error al conectar con MongoDB:', err);
+    process.exit(1); // Salí del proceso si no se puede conectar
+  });
+
 
 // 🔐 Generar token
 function generarToken(usuario, tipo) {
@@ -235,7 +246,7 @@ app.get('/api/auth/verificar', authenticateJWT, (req, res) => {
 // ===============================
 // 🚀 Iniciar microservicio
 // ===============================
-const PORT = process.env.PORT_AUTH || 3001;
-app.listen(PORT, () => {
-  console.log(`[auth] Microservicio corriendo en http://localhost:${PORT}`);
-});
+// const PORT = process.env.PORT_AUTH || 3001;
+// app.listen(PORT, () => {
+//   console.log(`[auth] Microservicio corriendo en http://localhost:${PORT}`);
+// });
