@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: auth
+    env: node
+    plan: free
+    rootDir: microservices
+    buildCommand: npm install
+    startCommand: node auth.js
+    branch: main
+
+  - type: web
+    name: servicios
+    env: node
+    plan: free
+    rootDir: microservices
+    buildCommand: npm install
+    startCommand: node servicios.js
+    branch: main
+
+  - type: web
+    name: horarios
+    env: node
+    plan: free
+    rootDir: microservices
+    buildCommand: npm install
+    startCommand: node horarios.js
+    branch: main
+
+  - type: web
+    name: turnos
+    env: node
+    plan: free
+    rootDir: microservices
+    buildCommand: npm install
+    startCommand: node turnos.js
+    branch: main
+
+  - type: web
+    name: general
+    env: node
+    plan: free
+    rootDir: microservices
+    buildCommand: npm install
+    startCommand: node general.js
+    branch: main
+
+  - type: web
+    name: gateway
+    env: node
+    plan: free
+    rootDir: gateway
+    buildCommand: npm install
+    startCommand: node gateway.js
+    branch: main
