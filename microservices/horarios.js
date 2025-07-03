@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('Mongo error:', err));
 
 // 📌 Crear horario disponible
-app.post('/api/horaios', authenticateJWT, async (req, res) => {
+app.post('/api/horarios', authenticateJWT, async (req, res) => {
   try {
     const { diaSemana, bloques, empleadoId } = req.body;
     console.log('Crear horario:', req.user);

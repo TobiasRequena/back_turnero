@@ -9,6 +9,7 @@ const Servicio = require('../models/Servicios');
 const Empleado = require('../models/Empleado');
 
 const authenticateJWT = require('../middleware/authenticateJWT');
+const cargarEmpleado = require('../middleware/cargarEmpleado');
 
 const app = express();
 app.use(cors());
@@ -21,7 +22,7 @@ mongoose.connect(process.env.MONGO_URI)
 // ==============================
 // 📌 Crear Turno (manual o cliente)
 // ==============================
-app.post('/api/turnos', async (req, res) => {
+app.post('/api/turnos', cargarEmpleado, async (req, res) => {
   try {
     const {
       fecha,
@@ -88,6 +89,13 @@ app.post('/api/turnos', async (req, res) => {
       estado: 'pendiente' // Establecer un estado inicial si no viene en el body
     });
 
+    const empleadoInfo = req.empleadoInfo ? {
+      _id: req.empleadoInfo._id,
+      nombre: req.empleadoInfo.nombre,
+      email: req.empleadoInfo.email,
+      telefono: req.empleadoInfo.telefono
+    } : null;
+
     res.status(201).json({
       msg: 'Turno creado correctamente',
       turno: {
@@ -97,7 +105,7 @@ app.post('/api/turnos', async (req, res) => {
         horaFin: turno.horaFin,
         clienteNombre: turno.clienteNombre,
         clienteTelefono: turno.clienteTelefono,
-        empleadoId: turno.empleadoId,
+        empleado: empleadoInfo,
         prestadorId: turno.prestadorId,
         servicio: {
           _id: servicio._id,
@@ -161,54 +169,68 @@ app.post('/api/turnos/disponibilidad', async (req, res) => {
     // 3. Determinar el día de la semana y rango de fechas para la consulta
     const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
-    // Usar el mediodía local para obtener el día de la semana correcto
-    const fechaTurnoParaDiaSemana = new Date(fecha + 'T12:00:00');
+    const fechaTurnoParaDiaSemana = new Date(fecha + 'T12:00:00'); // Usar mediodía local
     if (isNaN(fechaTurnoParaDiaSemana.getTime())) {
       console.log('Error: Formato de fecha inválido.');
       return res.status(400).json({ msg: 'Formato de fecha inválido. Por favor, use un formato de fecha reconocido.' });
     }
     const diaSemana = dias[fechaTurnoParaDiaSemana.getDay()];
-    console.log('Fecha del turno (Date object para día de semana):', fechaTurnoParaDiaSemana);
     console.log('Día de la semana calculado:', diaSemana);
 
-    // *** NUEVA LÓGICA PARA RANGO DE FECHAS DEL DÍA ***
-    // Crear Date objects para el inicio y fin del día, para consultas de rango
-    // Esto asegura que se capturen todos los turnos del día, sin importar la hora específica guardada.
-    const startOfDay = new Date(fecha); // Medianoche UTC de la fecha especificada
-    startOfDay.setUTCHours(0, 0, 0, 0); // Ajustar a medianoche UTC
-    
+    const startOfDay = new Date(fecha);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(fecha);
-    endOfDay.setUTCHours(23, 59, 59, 999); // Ajustar a casi final del día UTC
-
-    // Si tu MongoDB o tu aplicación funcionan con un desfase horario y guardan las fechas en UTC
-    // pero tu `fecha` de entrada es local, deberías ajustar:
-    // const startOfDay = new Date(fecha + 'T00:00:00'); // Tratar la entrada como hora local
-    // const endOfDay = new Date(fecha + 'T23:59:59'); // Tratar la entrada como hora local
-    // O si quieres ser exacto al día calendario del usuario, usa librerías como `date-fns-tz`
-
-    // Para este ejemplo, asumimos que los horarios son consistentes o que la fecha se almacena en UTC de forma simple.
-    // La clave es que `startOfDay` y `endOfDay` definan el día calendario claramente.
-    // Puedes verificar el valor UTC de estas fechas con `startOfDay.toISOString()` y `endOfDay.toISOString()`.
-    // *************************************************
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     // 4. Obtener los horarios de trabajo disponibles
+    // Se ajusta la consulta para que, si no se especifica empleadoId, busque tanto
+    // horarios asignados a null (generales) como a cualquier empleado del prestador.
+    // Esto se manejará mejor en el paso 6.
     const queryHorario = {
       prestadorId,
       diaSemana,
       eliminado: false,
-      ...(empleadoId ? { empleadoId } : { empleadoId: null })
+      // Si empleadoId no se proporciona, no se agrega un filtro por empleadoId
+      ...(empleadoId && { empleadoId }) // Agrega empleadoId solo si está presente
     };
+
     console.log('Consulta a la base de datos para Horarios:', JSON.stringify(queryHorario, null, 2));
-    const horariosDisponibles = await Horario.find(queryHorario);
+
+    let horariosDisponibles;
+    if (empleadoId) {
+        // Si se especificó un empleado, buscar solo sus horarios
+        horariosDisponibles = await Horario.find({ ...queryHorario, empleadoId });
+    } else {
+        // Si no se especificó un empleado, buscar todos los horarios del prestador para ese día,
+        // incluyendo los que tienen empleadoId: null (horarios generales del prestador)
+        // y los de empleados específicos.
+        horariosDisponibles = await Horario.find({
+            prestadorId,
+            diaSemana,
+            eliminado: false,
+            // Aquí es donde se maneja la lógica para incluir horarios generales y de empleados
+            // Asumiendo que `empleadoId` en Horario puede ser `null` para horarios generales
+            $or: [
+                { empleadoId: null }, // Horarios generales del prestador
+                { empleadoId: { $exists: true, $ne: null } } // Horarios de cualquier empleado
+            ]
+        });
+    }
+
     console.log('Horarios disponibles encontrados (cantidad):', horariosDisponibles.length);
     if (horariosDisponibles.length > 0) {
       console.log('Detalle de horarios disponibles (primeros 5):', horariosDisponibles.slice(0, 5).map(h => ({ _id: h._id, bloques: h.bloques, prestadorId: h.prestadorId, empleadoId: h.empleadoId })));
     }
 
-
-    // Si no se encuentran horarios para el día y prestador/empleado, se devuelve disponibilidad vacía
     if (!horariosDisponibles.length) {
       console.log('No se encontraron horarios de trabajo que coincidan con la consulta. Devolviendo disponibilidad vacía.');
+      let empleadoInfo = null;
+      if (empleadoId) {
+        const empleado = await Empleado.findById(empleadoId);
+        if (empleado) {
+          empleadoInfo = { id: empleado._id, nombre: empleado.nombre };
+        }
+      }
       return res.json({
         servicio: {
           id: servicio._id,
@@ -218,23 +240,22 @@ app.post('/api/turnos/disponibilidad', async (req, res) => {
           precio: servicio.precio
         },
         fecha: fecha,
-        empleado: null,
+        empleado: empleadoInfo,
         disponibilidad: []
       });
     }
 
-    // 5. Obtener los turnos ya existentes para la fecha y prestador/empleado
+    // 5. Obtener los turnos ya existentes para la fecha
+    // Ajustamos la consulta para que, si no se envía empleadoId, busque turnos de *todos* los empleados del prestador
     const queryTurnosExistentes = {
-      // *** MODIFICACIÓN CLAVE AQUÍ: Buscar por rango de fecha para el día completo ***
       fecha: {
         $gte: startOfDay,
         $lt: endOfDay
       },
-      // **************************************************************************
       prestadorId,
       eliminado: false,
       estado: { $ne: 'cancelado' },
-      ...(empleadoId ? { empleadoId } : { empleadoId: null })
+      ...(empleadoId ? { empleadoId } : {}) // Solo añade el filtro por empleadoId si se especifica
     };
     console.log('Consulta a la base de datos para Turnos existentes:', JSON.stringify(queryTurnosExistentes, null, 2));
     const turnosExistentes = await Turno.find(queryTurnosExistentes);
@@ -243,7 +264,6 @@ app.post('/api/turnos/disponibilidad', async (req, res) => {
       console.log('Detalle de turnos existentes (RAW, primeros 5):', JSON.stringify(turnosExistentes.slice(0, 5).map(t => ({ _id: t._id, horaInicio: t.horaInicio, horaFin: t.horaFin, prestadorId: t.prestadorId, empleadoId: t.empleadoId, fecha: t.fecha })), null, 2));
     }
 
-
     // Convertir los turnos existentes a un formato de minutos para facilitar la comparación
     const turnosOcupadosMinutos = turnosExistentes.map(t => ({
       inicioMin: timeToMinutes(t.horaInicio),
@@ -251,40 +271,64 @@ app.post('/api/turnos/disponibilidad', async (req, res) => {
     }));
     console.log('Turnos ocupados convertidos a minutos:', turnosOcupadosMinutos);
 
-    // 6. Calcular los bloques de tiempo disponibles
-    const bloquesDisponibles = [];
+    // 6. Consolidar y calcular los bloques de tiempo disponibles sin duplicados
+    const posiblesBloquesDeTrabajo = new Set(); // Usamos un Set para almacenar bloques únicos como strings "desde-hasta"
 
     for (const horario of horariosDisponibles) {
-      for (const bloqueHorario of horario.bloques) {
-        let inicioBloqueTrabajoMin = timeToMinutes(bloqueHorario.desde);
-        const finBloqueTrabajoMin = timeToMinutes(bloqueHorario.hasta);
-
-        console.log(`Procesando bloque de horario: ${bloqueHorario.desde}-${bloqueHorario.hasta} (minutos ${inicioBloqueTrabajoMin}-${finBloqueTrabajoMin}) para prestador ${horario.prestadorId} y empleado ${horario.empleadoId || 'N/A'}`);
-
-        while (inicioBloqueTrabajoMin + duracionServicioMinutos <= finBloqueTrabajoMin) {
-          const finPosibleTurnoMin = inicioBloqueTrabajoMin + duracionServicioMinutos;
-          const horaInicioPosible = minutesToTime(inicioBloqueTrabajoMin);
-          const horaFinPosible = minutesToTime(finPosibleTurnoMin);
-
-          console.log(`  Intentando slot: ${horaInicioPosible}-${horaFinPosible} (minutos ${inicioBloqueTrabajoMin}-${finPosibleTurnoMin})`);
-
-          const estaSuperpuesto = turnosOcupadosMinutos.some(turnoOcupado => {
-            const superposicion = inicioBloqueTrabajoMin < turnoOcupado.finMin && finPosibleTurnoMin > turnoOcupado.inicioMin;
-            if (superposicion) {
-              console.log(`    Superpuesto con turno existente: ${minutesToTime(turnoOcupado.inicioMin)}-${minutesToTime(turnoOcupado.finMin)}`);
-            }
-            return superposicion;
-          });
-
-          if (!estaSuperpuesto) {
-            bloquesDisponibles.push({ horaInicio: horaInicioPosible, horaFin: horaFinPosible });
-            console.log('    ¡Slot DISPONIBLE añadido!');
-          }
-
-          inicioBloqueTrabajoMin += duracionServicioMinutos;
+        // Si no se especificó empleadoId, y el horario tiene un empleado asignado (no null),
+        // y ese empleado no está entre los empleados del prestador (esto es más una validación de datos),
+        // podríamos necesitar filtrar aquí si hay horarios de empleados "huérfanos".
+        // Sin embargo, la lógica de `queryHorario` ya debería traer solo lo relevante.
+        // La clave es que si `empleadoId` NO se envía, queremos que *todos* los bloques de trabajo
+        // aplicables (tanto generales del prestador como de sus empleados) se consideren.
+        // Aquí no necesitamos diferenciar por empleado, solo recolectar los bloques de tiempo.
+        for (const bloqueHorario of horario.bloques) {
+            posiblesBloquesDeTrabajo.add(`${bloqueHorario.desde}-${bloqueHorario.hasta}`);
         }
-      }
     }
+
+    const bloquesDisponibles = [];
+    const slotsGenerados = new Set(); // Para evitar slots duplicados (ej: "09:00-09:20")
+
+    // Convertir los bloques únicos a un formato de minutos y ordenarlos para procesamiento
+    const sortedTrabajoMinutos = Array.from(posiblesBloquesDeTrabajo)
+        .map(b => {
+            const [desde, hasta] = b.split('-');
+            return {
+                desdeMin: timeToMinutes(desde),
+                hastaMin: timeToMinutes(hasta)
+            };
+        })
+        .sort((a, b) => a.desdeMin - b.desdeMin); // Ordenar por hora de inicio
+
+    for (const bloqueTrabajo of sortedTrabajoMinutos) {
+        let inicioBloqueActualMin = bloqueTrabajo.desdeMin;
+        const finBloqueActualMin = bloqueTrabajo.hastaMin;
+
+        while (inicioBloqueActualMin + duracionServicioMinutos <= finBloqueActualMin) {
+            const finPosibleTurnoMin = inicioBloqueActualMin + duracionServicioMinutos;
+            const horaInicioPosible = minutesToTime(inicioBloqueActualMin);
+            const horaFinPosible = minutesToTime(finPosibleTurnoMin);
+            const slotKey = `${horaInicioPosible}-${horaFinPosible}`; // Clave única para el slot
+
+            // Solo si este slot no ha sido ya añadido
+            if (!slotsGenerados.has(slotKey)) {
+                const estaSuperpuesto = turnosOcupadosMinutos.some(turnoOcupado => {
+                    return inicioBloqueActualMin < turnoOcupado.finMin && finPosibleTurnoMin > turnoOcupado.inicioMin;
+                });
+
+                if (!estaSuperpuesto) {
+                    bloquesDisponibles.push({ horaInicio: horaInicioPosible, horaFin: horaFinPosible });
+                    slotsGenerados.add(slotKey); // Añadir a los slots ya generados
+                }
+            }
+
+            inicioBloqueActualMin += duracionServicioMinutos;
+        }
+    }
+
+    // Opcional: Ordenar los bloques disponibles por hora de inicio
+    bloquesDisponibles.sort((a, b) => timeToMinutes(a.horaInicio) - timeToMinutes(b.horaInicio));
 
     console.log('Bloques disponibles finales encontrados:', bloquesDisponibles.length);
     if (bloquesDisponibles.length > 0) {
@@ -296,9 +340,6 @@ app.post('/api/turnos/disponibilidad', async (req, res) => {
       const empleado = await Empleado.findById(empleadoId);
       if (empleado) {
         empleadoInfo = { id: empleado._id, nombre: empleado.nombre };
-        console.log('Información del empleado:', empleadoInfo);
-      } else {
-        console.log('Empleado no encontrado con ID:', empleadoId);
       }
     }
 

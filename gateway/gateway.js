@@ -19,9 +19,9 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/auth', createProxyMiddleware({ target: `http://localhost:${PORT_AUTH}/api/auth`, changeOrigin: true }));
-app.use('/api/servicios', createProxyMiddleware({ target: `http://localhost:${PORT_SERVICIOS}/api/eventos`, changeOrigin: true }));
-app.use('/api/horaios', createProxyMiddleware({ target: `http://localhost:${PORT_HORARIOS}/api/inscripciones`, changeOrigin: true }));
-app.use('/api/turnos', createProxyMiddleware({ target: `http://localhost:${PORT_TURNOS}/api/actividades`, changeOrigin: true }));
+app.use('/api/servicios', createProxyMiddleware({ target: `http://localhost:${PORT_SERVICIOS}/api/servicios`, changeOrigin: true }));
+app.use('/api/horarios', createProxyMiddleware({ target: `http://localhost:${PORT_HORARIOS}/api/horarios`, changeOrigin: true }));
+app.use('/api/turnos', createProxyMiddleware({ target: `http://localhost:${PORT_TURNOS}/api/turnos`, changeOrigin: true }));
 app.use('/api/general', createProxyMiddleware({ target: `http://localhost:${PORT_GRAL}/api/general`, changeOrigin: true }));
 
 app.use(express.json());
