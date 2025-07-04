@@ -7,6 +7,7 @@ const Horario = require('../models/Horario');
 const Turno = require('../models/Turno');
 const Servicio = require('../models/Servicios');
 const Empleado = require('../models/Empleado');
+const Prestador = require('../models/Prestador')
 
 const authenticateJWT = require('../middleware/authenticateJWT');
 const cargarEmpleado = require('../middleware/cargarEmpleado');
@@ -400,7 +401,10 @@ app.get('/api/turnos', authenticateJWT, async (req, res) => {
 
     console.log('Consulta de filtros para /turnos:', JSON.stringify(filtros, null, 2));
 
-    const turnos = await Turno.find(filtros).sort({ fecha: 1, horaInicio: 1 });
+    const turnos = await Turno.find(filtros).sort({ fecha: 1, horaInicio: 1 })
+      .populate('servicioId', 'nombre descripcion duracionMinutos precio')
+      .populate('empleadoId', 'nombre')
+      .populate('prestadorId', 'nombreComercial telefono direccion');
     console.log('Turnos encontrados (cantidad):', turnos.length);
     if (turnos.length > 0) {
       console.log('Detalle de turnos encontrados (primeros 5):', JSON.stringify(turnos.slice(0, 5), null, 2));
