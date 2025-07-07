@@ -15,6 +15,7 @@ const Admin = require('../models/Admin');
 // Middleware
 const verifyRole = require('../middleware/verifyRole');
 const authenticateJWT = require('../middleware/authenticateJWT');
+const verificarPrestadorExiste = require('../middleware/existingPrestador');
 
 const app = express();
 app.use(cors());
