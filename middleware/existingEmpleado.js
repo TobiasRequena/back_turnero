@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Empleado = require('./models/Empleado');
+const Empleado = require('../models/Empleado');
 
 const verificarEmpleadoExiste = async (req, res, next) => {
   const empleadoId = req.params.id || req.body.empleadoId;

@@ -1,5 +1,4 @@
-// middlewares/cargarEmpleado.js
-const Empleado = require('./models/Empleado');
+const Empleado = require('../models/Empleado');
 
 const cargarEmpleado = async (req, res, next) => {
   const empleadoId = req.body.empleadoId || req.query.empleadoId;
