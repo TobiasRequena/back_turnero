@@ -13,6 +13,7 @@ const authenticateJWT = require('../middleware/authenticateJWT');
 const cargarEmpleado = require('../middleware/cargarEmpleado');
 const verificarPrestadorExiste = require('../middleware/existingPrestador');
 const verificarEmpleadoExiste = require('../middleware/existingEmpleado');
+const verificarServicioExiste = require('../middleware/existingServicio');
 
 const app = express();
 app.use(cors());
@@ -25,7 +26,7 @@ mongoose.connect(process.env.MONGO_URI)
 // ==============================
 // 📌 Crear Turno (manual o cliente)
 // ==============================
-app.post('/api/turnos', cargarEmpleado, verificarPrestadorExiste, verificarEmpleadoExiste, async (req, res) => {
+app.post('/api/turnos', cargarEmpleado, verificarPrestadorExiste, verificarEmpleadoExiste, verificarServicioExiste, async (req, res) => {
   try {
     const {
       fecha,
@@ -143,7 +144,7 @@ function minutesToTime(totalMinutes) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-app.post('/api/turnos/disponibilidad', verificarPrestadorExiste, verificarEmpleadoExiste, async (req, res) => {
+app.post('/api/turnos/disponibilidad', verificarPrestadorExiste, verificarEmpleadoExiste, verificarServicioExiste, async (req, res) => {
   try {
     // 1. Obtener y validar los datos de entrada
     const { fecha, servicioId, prestadorId, empleadoId } = req.body;
