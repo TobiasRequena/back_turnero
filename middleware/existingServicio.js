@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Servicio = require('./models/Servicios');
+const Servicio = require('../models/Servicios');
 
 const verificarServicioExiste = async (req, res, next) => {
   const servicioId = req.params.id || req.body.servicioId;
