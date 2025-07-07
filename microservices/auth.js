@@ -59,9 +59,9 @@ function generarToken(usuario, tipo) {
 // ===============================
 app.post('/api/auth/registro/prestador', async (req, res) => {
   try {
-    const { nombreComercial, nombreUrl, email, telefono, password } = req.body;
+    const { nombreComercial, nombreUrl, rubro, email, telefono, password } = req.body;
 
-    if (!nombreComercial || !nombreUrl || !email || !telefono || !password) {
+    if (!nombreComercial || !nombreUrl || !email || !telefono || !password || !rubro) {
       return res.status(400).json({ msg: 'Todos los campos son obligatorios' });
     }
 
@@ -74,6 +74,7 @@ app.post('/api/auth/registro/prestador', async (req, res) => {
     const nuevo = await Prestador.create({
       nombreComercial,
       nombreUrl,
+      rubro,
       email,
       telefono,
       passwordHash: hash
@@ -86,6 +87,7 @@ app.post('/api/auth/registro/prestador', async (req, res) => {
         nombreComercial: nuevo.nombreComercial,
         nombreUrl: nuevo.nombreUrl,
         email: nuevo.email,
+        rubro: nuevo.rubro,
         telefono: nuevo.telefono
       }
     });

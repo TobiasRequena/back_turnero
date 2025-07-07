@@ -53,7 +53,7 @@ app.get('/api/general/empleados/:IdPrestador', async (req, res) => {
       // .populate('prestadorId', 'nombreComercial nombreUrl');
 
     if (empleados.length === 0) {
-      return res.status(404).json({ msg: 'No se encontraron empleados para este prestador' });
+      return res.json({ msg: 'No se encontraron empleados para este prestador', empleados});
     }
 
     res.json({empleados: empleados});
