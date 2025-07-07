@@ -1,8 +1,8 @@
 // middlewares/cargarEmpleado.js
-const Empleado = require('../models/Empleado');
+const Empleado = require('./models/Empleado');
 
 const cargarEmpleado = async (req, res, next) => {
-  const { empleadoId } = req.body;
+  const empleadoId = req.body.empleadoId || req.query.empleadoId;
   if (empleadoId) {
     try {
       const empleado = await Empleado.findById(empleadoId).select('nombre email telefono');

@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const Horario = require('../models/Horario');
 const authenticateJWT = require('../middleware/authenticateJWT');
+const verificarEmpleadoExiste = require('../middleware/existingEmpleado');
 
 const app = express();
 app.use(cors());
@@ -16,7 +17,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('Mongo error:', err));
 
 // 📌 Crear horario disponible
-app.post('/api/horarios', authenticateJWT, async (req, res) => {
+app.post('/api/horarios', authenticateJWT, verificarEmpleadoExiste, async (req, res) => {
   try {
     const { diaSemana, bloques, empleadoId } = req.body;
     console.log('Crear horario:', req.user);
