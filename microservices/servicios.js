@@ -15,39 +15,68 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('[servicios] Mongo conectado'))
   .catch(err => console.error('Mongo error:', err));
 
-// ✅ Crear servicio
 app.post('/api/servicios', authenticateJWT, verifyRole('admin', 'prestador'), async (req, res) => {
   try {
-    const { nombre, descripcion, duracionMinutos, precio } = req.body;
-    const prestadorId = req.user.id; // Obtener el ID del prestador del token JWT
+    const serviciosACrear = req.body;
+    const prestadorId = req.user.id;
 
-    // 1. Verificar si ya existe un servicio con el mismo nombre para este prestador
-    const servicioExistente = await Servicio.findOne({
-      prestadorId: prestadorId,
-      nombre: nombre,
-      eliminado: false
-    });
-
-    if (servicioExistente) {
-      return res.status(409).json({
-        msg: 'Ya existe un servicio con este nombre para tu negocio. Por favor, elige un nombre diferente o edita el servicio existente.',
-        servicioExistente: servicioExistente
-      });
+    if (!Array.isArray(serviciosACrear) || serviciosACrear.length === 0) {
+      return res.status(400).json({ msg: 'El cuerpo de la solicitud debe ser un array de servicios no vacío.' });
     }
 
-    // 2. Si no existe, proceder con la creación del nuevo servicio
-    const nuevo = await Servicio.create({
-      prestadorId: prestadorId,
-      nombre,
-      descripcion,
-      duracionMinutos,
-      precio
-    });
+    const serviciosCreados = [];
+    const erroresCreacion = [];
 
-    res.status(201).json({ msg: 'Servicio creado exitosamente.', servicio: nuevo });
+    for (const servicioData of serviciosACrear) {
+      const { nombre, descripcion, duracionMinutos, precio } = servicioData;
+
+      const servicioExistente = await Servicio.findOne({
+        prestadorId: prestadorId,
+        nombre: nombre,
+        eliminado: false
+      });
+
+      if (servicioExistente) {
+        erroresCreacion.push({
+          nombre: nombre,
+          msg: 'Ya existe un servicio con este nombre para tu negocio.',
+          servicioExistente: servicioExistente
+        });
+      } else {
+        try {
+          const nuevo = await Servicio.create({
+            prestadorId: prestadorId,
+            nombre,
+            descripcion,
+            duracionMinutos,
+            precio
+          });
+          serviciosCreados.push(nuevo);
+        } catch (creationError) {
+          erroresCreacion.push({
+            nombre: nombre,
+            msg: 'Error al crear el servicio individual.',
+            error: creationError.message
+          });
+        }
+      }
+    }
+
+    if (serviciosCreados.length > 0 && erroresCreacion.length === 0) {
+      res.status(201).json({ msg: 'Servicios creados exitosamente.', servicios: serviciosCreados });
+    } else if (serviciosCreados.length > 0 && erroresCreacion.length > 0) {
+      res.status(207).json({ 
+        msg: 'Algunos servicios fueron creados, pero hubo errores con otros.',
+        serviciosCreados: serviciosCreados,
+        errores: erroresCreacion
+      });
+    } else {
+      res.status(400).json({ msg: 'No se pudo crear ningún servicio.', errores: erroresCreacion });
+    }
+
   } catch (err) {
-    console.error('Error al crear servicio:', err); // Para depuración
-    res.status(500).json({ msg: 'Hubo un error al crear el servicio. Por favor, inténtalo de nuevo.', error: err.message });
+    console.error('Error general al crear servicios:', err);
+    res.status(500).json({ msg: 'Hubo un error inesperado al procesar la solicitud.', error: err.message });
   }
 });
 
